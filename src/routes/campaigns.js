@@ -112,14 +112,22 @@ const handleMulterError = (req, res, next) => {
 
 router.post('/', authMiddleware, handleMulterError, async (req, res) => {
   try {
-    const { name, type, content, groups, interval, scheduledTime } = req.body;
+    const { name, type, content, groups, interval, scheduledTime, mediaUrl } = req.body;
     
     // Validação básica
     if (!name || !type || !content || !groups) {
       return res.status(400).json({ error: 'Campos obrigatórios: name, type, content, groups' });
     }
     
-    const mediaPath = req.file ? `/uploads/${req.file.filename}` : null;
+    // Determinar o caminho da mídia (arquivo ou URL)
+    let mediaPath = null;
+    if (req.file) {
+      // Arquivo enviado
+      mediaPath = `/uploads/${req.file.filename}`;
+    } else if (mediaUrl) {
+      // URL fornecida
+      mediaPath = mediaUrl;
+    }
 
     const campaign = await prisma.campaign.create({
       data: {
@@ -142,7 +150,7 @@ router.post('/', authMiddleware, handleMulterError, async (req, res) => {
 
 router.put('/:id', authMiddleware, handleMulterError, async (req, res) => {
   try {
-    const { name, type, content, groups, interval, scheduledTime } = req.body;
+    const { name, type, content, groups, interval, scheduledTime, mediaUrl } = req.body;
     
     const updateData = {
       name,
@@ -153,8 +161,13 @@ router.put('/:id', authMiddleware, handleMulterError, async (req, res) => {
       scheduledTime
     };
 
+    // Determinar o caminho da mídia (arquivo ou URL)
     if (req.file) {
+      // Arquivo enviado
       updateData.mediaPath = `/uploads/${req.file.filename}`;
+    } else if (mediaUrl) {
+      // URL fornecida
+      updateData.mediaPath = mediaUrl;
     }
 
     const campaign = await prisma.campaign.update({
