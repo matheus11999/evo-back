@@ -36,8 +36,8 @@ class EvolutionApiService {
     };
   }
 
-  // Método auxiliar para fazer requisições com logging
-  async makeRequest(method, url, data = null) {
+  // Método auxiliar para fazer requisições com logging e retry
+  async makeRequest(method, url, data = null, retries = 3) {
     const startTime = Date.now();
     const config = {
       method,
@@ -50,21 +50,31 @@ class EvolutionApiService {
       config.data = data;
     }
     
-    try {
-      const response = await axios(config);
-      const responseTime = Date.now() - startTime;
-      
-      // Log da requisição bem-sucedida
-      await ApiLogger.logRequest(config, response, null, responseTime);
-      
-      return response;
-    } catch (error) {
-      const responseTime = Date.now() - startTime;
-      
-      // Log da requisição com erro
-      await ApiLogger.logRequest(config, null, error, responseTime);
-      
-      throw error;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const response = await axios(config);
+        const responseTime = Date.now() - startTime;
+        
+        // Log da requisição bem-sucedida
+        await ApiLogger.logRequest(config, response, null, responseTime);
+        
+        return response;
+      } catch (error) {
+        const responseTime = Date.now() - startTime;
+        
+        // Se for erro 429 (rate limit) e ainda tem tentativas, aguardar e tentar novamente
+        if (error.response?.status === 429 && attempt < retries) {
+          const delay = Math.pow(2, attempt) * 1000; // Backoff exponencial: 2s, 4s, 8s
+          console.log(`⏳ Rate limit detectado (429). Aguardando ${delay}ms antes da tentativa ${attempt + 1}/${retries}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        // Log da requisição com erro
+        await ApiLogger.logRequest(config, null, error, responseTime);
+        
+        throw error;
+      }
     }
   }
 

@@ -18,6 +18,7 @@ const uploadTestRoutes = require('./routes/upload-test');
 const { startCronJobs } = require('./services/cronService');
 const maintenanceService = require('./services/maintenanceService');
 const { initializeDatabase } = require('./utils/dbInit');
+const { createAdminUser } = require('./utils/createAdminUser');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -65,6 +66,10 @@ async function startServer() {
       setTimeout(async () => {
         try {
           console.log('🔄 Inicializando serviços...');
+          
+          // Criar usuário admin se não existir
+          await createAdminUser();
+          
           await startCronJobs();
           await maintenanceService.init();
           console.log('✅ Serviços inicializados com sucesso');
