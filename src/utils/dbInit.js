@@ -6,12 +6,17 @@ async function initializeDatabase() {
   try {
     console.log('🗄️ Inicializando banco de dados...');
     
-    // Criar diretório prisma se não existir
+    // Criar diretórios necessários se não existirem
     const prismaDir = path.join(__dirname, '../../prisma');
-    if (!fs.existsSync(prismaDir)) {
-      fs.mkdirSync(prismaDir, { recursive: true });
-      console.log('📁 Diretório prisma criado');
-    }
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    const logsDir = path.join(__dirname, '../../logs');
+    
+    [prismaDir, uploadsDir, logsDir].forEach(dir => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log('📁 Diretório criado:', dir);
+      }
+    });
     
     // Inicializar cliente Prisma
     const prisma = new PrismaClient();

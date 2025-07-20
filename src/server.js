@@ -10,6 +10,7 @@ const configRoutes = require('./routes/config');
 const dashboardRoutes = require('./routes/dashboard');
 const logRoutes = require('./routes/logs');
 const maintenanceRoutes = require('./routes/maintenance');
+const uploadTestRoutes = require('./routes/upload-test');
 
 const { startCronJobs } = require('./services/cronService');
 const maintenanceService = require('./services/maintenanceService');
@@ -30,6 +31,7 @@ app.use('/api/config', configRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/upload', uploadTestRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../../frontend/dist')));
