@@ -1,6 +1,9 @@
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
 
+// Detectar ambiente automaticamente antes de iniciar
+require('./detect-environment');
+
 const prisma = new PrismaClient();
 
 async function createAdmin() {
