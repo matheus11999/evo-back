@@ -1,0 +1,79 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Campaign {
+  id            String      @id @default(cuid())
+  name          String
+  type          String      // TEXT, IMAGE, DOCUMENT
+  content       String
+  mediaPath     String?
+  groups        String      // JSON array of group IDs
+  interval      Int?        // in seconds
+  scheduledTime String?     // cron expression or timestamp
+  status        String      @default("PAUSED") // ACTIVE, PAUSED, FINISHED
+  totalSent     Int         @default(0)
+  lastSent      DateTime?
+  instance      String?     // Nome da instância usada
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  logs          MessageLog[]
+}
+
+model MessageLog {
+  id         String   @id @default(cuid())
+  campaignId String
+  groupId    String
+  groupName  String
+  status     String   // SUCCESS, ERROR, PENDING
+  message    String?
+  sentAt     DateTime @default(now())
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model Config {
+  id            String   @id @default(cuid())
+  evolutionUrl  String
+  evolutionKey  String
+  timezone      String   @default("America/Sao_Paulo")
+  language      String   @default("pt-BR")
+  updatedAt     DateTime @updatedAt
+}
+
+model Instance {
+  id           String   @id @default(cuid())
+  instanceName String   @unique
+  phoneNumber  String   // Número do dono da instância
+  status       String   @default("DISCONNECTED") // CONNECTED, DISCONNECTED, CONNECTING
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ApiLog {
+  id            String   @id @default(cuid())
+  method        String   // GET, POST, PUT, DELETE
+  url           String   // URL da requisição
+  endpoint      String   // endpoint limpo (sem query params)
+  requestBody   String?  // JSON da requisição
+  requestHeaders String? // Headers da requisição
+  responseStatus Int     // Status code da resposta
+  responseBody  String?  // JSON da resposta
+  responseTime  Int      // Tempo de resposta em ms
+  instanceName  String?  // Nome da instância se aplicável
+  error         String?  // Erro se houver
+  createdAt     DateTime @default(now())
+}
