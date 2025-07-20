@@ -129,10 +129,16 @@ async function executeCampaign(campaign) {
         // Construir URL completa para mídia se houver
         let mediaUrl = null;
         if (campaign.mediaPath) {
-          // Usar a URL do servidor configurada nas variáveis de ambiente
-          const serverUrl = process.env.SERVER_URL || process.env.BACKEND_URL || 'http://localhost:3001';
-          mediaUrl = `${serverUrl}${campaign.mediaPath}`;
-          console.log(`📁 URL da mídia: ${mediaUrl}`);
+          // Se já for uma URL completa, usar diretamente
+          if (campaign.mediaPath.startsWith('http://') || campaign.mediaPath.startsWith('https://')) {
+            mediaUrl = campaign.mediaPath;
+            console.log(`🔗 URL da mídia externa: ${mediaUrl}`);
+          } else {
+            // Se for um caminho local, concatenar com serverUrl
+            const serverUrl = process.env.SERVER_URL || process.env.BACKEND_URL || 'http://localhost:3001';
+            mediaUrl = `${serverUrl}${campaign.mediaPath}`;
+            console.log(`📁 URL da mídia local: ${mediaUrl}`);
+          }
         }
 
         const result = await evolutionApi.sendMessage(
