@@ -19,9 +19,9 @@ class ReportService {
         return;
       }
 
-      if (!instance || !instance.phoneNumber || instance.phoneNumber === '0000000000000') {
-        console.log(`⚠️ Número do dono da instância ${instanceName} não configurado, pulando relatório`);
-        console.log(`📝 Para receber relatórios, recrie a instância "${instanceName}" no InstanceManager`);
+      if (!instance || !instance.phoneNumber || instance.phoneNumber === '0000000000000' || instance.phoneNumber.length < 10) {
+        console.log(`⚠️ Número do dono da instância ${instanceName} não configurado ou inválido: ${instance?.phoneNumber || 'não definido'}`);
+        console.log(`📝 Para receber relatórios, recrie a instância "${instanceName}" no InstanceManager com um número válido`);
         return;
       }
 

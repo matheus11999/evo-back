@@ -60,6 +60,17 @@ router.post('/create-instance', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Número de telefone é obrigatório' });
     }
 
+    // Limpar e validar número de telefone
+    const cleanNumber = phoneNumber.replace(/\D/g, ''); // Remove tudo que não é dígito
+    if (cleanNumber.length < 10 || cleanNumber.length > 15) {
+      return res.status(400).json({ error: 'Número de telefone deve ter entre 10 e 15 dígitos' });
+    }
+
+    // Garantir que o número tem código do país (Brasil por padrão)
+    const formattedNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`;
+    
+    console.log(`📱 Número formatado: ${phoneNumber} → ${formattedNumber}`);
+
     // Verificar se já existe no banco
     const existingInstance = await prisma.instance.findUnique({
       where: { instanceName }
@@ -70,19 +81,20 @@ router.post('/create-instance', authMiddleware, async (req, res) => {
     }
 
     // Criar na Evolution API
-    const result = await evolutionApi.createInstance(instanceName, phoneNumber);
+    const result = await evolutionApi.createInstance(instanceName, formattedNumber);
     
     if (result.success) {
-      // Salvar no banco de dados local
+      // Salvar no banco de dados local com número formatado
       await prisma.instance.create({
         data: {
           instanceName,
-          phoneNumber,
+          phoneNumber: formattedNumber,
           status: 'CONNECTING'
         }
       });
       
-      console.log(`📱 Instância "${instanceName}" criada e salva no banco - Número: ${phoneNumber}`);
+      console.log(`📱 Instância "${instanceName}" criada e salva no banco - Número: ${formattedNumber}`);
+      console.log(`📊 Relatórios automáticos habilitados para: ${formattedNumber}`);
     }
     
     res.json(result);

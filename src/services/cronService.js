@@ -129,8 +129,8 @@ async function executeCampaign(campaign) {
         // Construir URL completa para mídia se houver
         let mediaUrl = null;
         if (campaign.mediaPath) {
-          // Usar a mesma lógica do endpoint de teste
-          const serverUrl = 'http://localhost:3001';
+          // Usar a URL do servidor configurada nas variáveis de ambiente
+          const serverUrl = process.env.SERVER_URL || process.env.BACKEND_URL || 'http://localhost:3001';
           mediaUrl = `${serverUrl}${campaign.mediaPath}`;
           console.log(`📁 URL da mídia: ${mediaUrl}`);
         }

@@ -10,8 +10,9 @@ async function initializeDatabase() {
     const prismaDir = path.join(__dirname, '../../prisma');
     const uploadsDir = path.join(__dirname, '../../uploads');
     const logsDir = path.join(__dirname, '../../logs');
+    const dataDir = '/data'; // Diretório persistente para banco de dados
     
-    [prismaDir, uploadsDir, logsDir].forEach(dir => {
+    [prismaDir, uploadsDir, logsDir, dataDir].forEach(dir => {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
         console.log('📁 Diretório criado:', dir);
