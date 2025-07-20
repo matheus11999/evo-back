@@ -13,6 +13,7 @@ const maintenanceRoutes = require('./routes/maintenance');
 
 const { startCronJobs } = require('./services/cronService');
 const maintenanceService = require('./services/maintenanceService');
+const { initializeDatabase } = require('./utils/dbInit');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -38,8 +39,29 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  startCronJobs();
-  maintenanceService.init();
-});
+// Inicializar aplicação com banco de dados
+async function startServer() {
+  try {
+    // Inicializar banco de dados primeiro
+    await initializeDatabase();
+    
+    app.listen(PORT, async () => {
+      console.log(`🚀 Servidor rodando na porta ${PORT}`);
+      
+      // Inicializar serviços após o banco estar pronto
+      try {
+        await startCronJobs();
+        await maintenanceService.init();
+      } catch (error) {
+        console.error('⚠️ Erro ao inicializar serviços:', error.message);
+        console.log('🔄 Serviços serão inicializados posteriormente...');
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Falha ao inicializar servidor:', error.message);
+    process.exit(1);
+  }
+}
+
+startServer();
