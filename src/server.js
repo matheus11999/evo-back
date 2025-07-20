@@ -3,6 +3,9 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Detectar ambiente automaticamente antes de iniciar
+require('../detect-environment');
+
 const authRoutes = require('./routes/auth');
 const campaignRoutes = require('./routes/campaigns');
 const groupRoutes = require('./routes/groups');

@@ -1,18 +1,29 @@
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
+const { configureDatabaseUrl } = require('./databasePath');
 
 async function initializeDatabase() {
   try {
     console.log('🗄️ Inicializando banco de dados...');
     
+    // Configurar URL do banco dinamicamente
+    const databaseUrl = configureDatabaseUrl();
+    console.log(`📊 URL do banco configurada: ${databaseUrl}`);
+    
     // Criar diretórios necessários se não existirem
     const prismaDir = path.join(__dirname, '../../prisma');
     const uploadsDir = path.join(__dirname, '../../uploads');
     const logsDir = path.join(__dirname, '../../logs');
-    const dataDir = '/data'; // Diretório persistente para banco de dados
+    const dataDir = path.join(__dirname, '../../data'); // Diretório local para banco
     
-    [prismaDir, uploadsDir, logsDir, dataDir].forEach(dir => {
+    // Adicionar /data apenas se for um ambiente com volumes configurados
+    const dirsToCreate = [prismaDir, uploadsDir, logsDir, dataDir];
+    if (fs.existsSync('/data') || process.env.USE_DATA_VOLUME === 'true') {
+      dirsToCreate.push('/data');
+    }
+    
+    dirsToCreate.forEach(dir => {
       if (!fs.existsSync(dir)) {
         try {
           fs.mkdirSync(dir, { recursive: true });
