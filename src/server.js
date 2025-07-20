@@ -44,25 +44,43 @@ if (process.env.NODE_ENV === 'production') {
 // Inicializar aplicação com banco de dados
 async function startServer() {
   try {
-    // Inicializar banco de dados primeiro
-    await initializeDatabase();
+    // Tentar inicializar banco de dados
+    try {
+      await initializeDatabase();
+      console.log('✅ Database initialized successfully');
+    } catch (dbError) {
+      console.error('⚠️ Database initialization failed:', dbError.message);
+      console.log('🔄 Starting server without database initialization...');
+      console.log('📝 Database will be initialized on first use');
+    }
     
     app.listen(PORT, async () => {
       console.log(`🚀 Servidor rodando na porta ${PORT}`);
+      console.log(`🌐 Acesse: http://localhost:${PORT}`);
       
-      // Inicializar serviços após o banco estar pronto
-      try {
-        await startCronJobs();
-        await maintenanceService.init();
-      } catch (error) {
-        console.error('⚠️ Erro ao inicializar serviços:', error.message);
-        console.log('🔄 Serviços serão inicializados posteriormente...');
-      }
+      // Inicializar serviços após o servidor estar rodando
+      setTimeout(async () => {
+        try {
+          console.log('🔄 Inicializando serviços...');
+          await startCronJobs();
+          await maintenanceService.init();
+          console.log('✅ Serviços inicializados com sucesso');
+        } catch (error) {
+          console.error('⚠️ Erro ao inicializar serviços:', error.message);
+          console.log('🔄 Serviços podem ser inicializados manualmente se necessário');
+        }
+      }, 2000); // Aguardar 2 segundos antes de iniciar serviços
     });
     
   } catch (error) {
-    console.error('❌ Falha ao inicializar servidor:', error.message);
-    process.exit(1);
+    console.error('❌ Falha crítica ao inicializar servidor:', error.message);
+    console.log('🔄 Tentando iniciar servidor básico...');
+    
+    // Fallback: iniciar servidor sem inicializações extras
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor básico rodando na porta ${PORT}`);
+      console.log('⚠️ Algumas funcionalidades podem não estar disponíveis');
+    });
   }
 }
 

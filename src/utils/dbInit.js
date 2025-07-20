@@ -14,8 +14,22 @@ async function initializeDatabase() {
     
     [prismaDir, uploadsDir, logsDir, dataDir].forEach(dir => {
       if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-        console.log('📁 Diretório criado:', dir);
+        try {
+          fs.mkdirSync(dir, { recursive: true });
+          console.log('📁 Diretório criado:', dir);
+        } catch (mkdirError) {
+          console.error(`❌ Erro ao criar diretório ${dir}:`, mkdirError.message);
+        }
+      }
+      
+      // Verificar permissões de escrita
+      try {
+        const testFile = path.join(dir, '.test-write');
+        fs.writeFileSync(testFile, 'test');
+        fs.unlinkSync(testFile);
+        console.log(`✅ Permissões de escrita OK em: ${dir}`);
+      } catch (permError) {
+        console.error(`⚠️ Problema de permissões em ${dir}:`, permError.message);
       }
     });
     
@@ -32,36 +46,46 @@ async function initializeDatabase() {
       console.log('✅ Banco de dados conectado com sucesso');
       
     } catch (error) {
-      if (error.code === 'P2021' || error.message.includes('table') || error.message.includes('database file')) {
+      if (error.code === 'P2021' || error.message.includes('table') || error.message.includes('database file') || error.message.includes('no such table')) {
         console.log('📊 Criando estrutura do banco de dados...');
         
-        // Executar prisma db push para criar as tabelas
-        const { spawn } = require('child_process');
-        
-        return new Promise((resolve, reject) => {
-          const dbPush = spawn('npx', ['prisma', 'db', 'push', '--accept-data-loss'], {
+        try {
+          // Usar execSync para melhor controle de erro
+          const { execSync } = require('child_process');
+          
+          console.log('🔄 Executando prisma db push...');
+          const output = execSync('npx prisma db push --accept-data-loss', {
             cwd: path.join(__dirname, '../..'),
-            stdio: 'inherit'
+            encoding: 'utf-8',
+            stdio: 'pipe'
           });
           
-          dbPush.on('close', async (code) => {
-            if (code === 0) {
-              console.log('✅ Estrutura do banco criada com sucesso');
-              try {
-                // Reconectar após criar estrutura
-                await prisma.$connect();
-                await prisma.user.findFirst();
-                console.log('✅ Banco inicializado e pronto para uso');
-                resolve(prisma);
-              } catch (reconnectError) {
-                console.error('❌ Erro ao reconectar:', reconnectError.message);
-                reject(reconnectError);
-              }
-            } else {
-              reject(new Error(`Falha ao criar estrutura do banco (código ${code})`));
-            }
-          });
-        });
+          console.log('📄 Output do Prisma:', output);
+          console.log('✅ Estrutura do banco criada com sucesso');
+          
+          // Reconectar após criar estrutura
+          await prisma.$disconnect();
+          const newPrisma = new PrismaClient();
+          await newPrisma.$connect();
+          await newPrisma.user.findFirst();
+          console.log('✅ Banco inicializado e pronto para uso');
+          
+          return newPrisma;
+          
+        } catch (dbPushError) {
+          console.error('❌ Erro ao executar prisma db push:', dbPushError.message);
+          console.log('🔄 Tentando continuar sem recriar o banco...');
+          
+          // Tentar continuar mesmo com erro
+          try {
+            await prisma.$connect();
+            console.log('✅ Conectado ao banco existente');
+            return prisma;
+          } catch (connectError) {
+            console.error('❌ Falha total na conexão com banco:', connectError.message);
+            throw connectError;
+          }
+        }
       } else {
         throw error;
       }
